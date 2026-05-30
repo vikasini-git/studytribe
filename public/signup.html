@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Create Account — StudyTribe</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#2563eb;--blue-dark:#1d4ed8;--blue-deeper:#1e3a8a;--slate-50:#f8fafc;--slate-200:#e2e8f0;--slate-400:#94a3b8;--slate-700:#334155}
+body{min-height:100vh;font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,var(--blue-deeper) 0%,#1a56db 50%,var(--blue) 100%);display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{width:100%;max-width:500px;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.25)}
+.card-top{background:linear-gradient(135deg,var(--blue-deeper),var(--blue));padding:24px 32px 18px;text-align:center;position:relative}
+.card-top::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:20px;background:#fff;border-radius:20px 20px 0 0}
+.logo{display:inline-flex;align-items:center;gap:9px;font-size:20px;font-weight:700;color:#fff;margin-bottom:6px}
+.logo i{color:#fbbf24}
+.card-top h2{font-size:22px;font-weight:700;color:#fff;margin-bottom:3px}
+.card-top p{font-size:13px;color:rgba(255,255,255,0.75)}
+.card-body{padding:24px 32px 28px}
+.alert{display:none;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;align-items:center;gap:8px}
+.alert.show{display:flex}
+.alert-error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.alert-success{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.grid{display:grid;gap:12px}
+.grid-2{grid-template-columns:1fr 1fr;gap:12px;display:grid}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--slate-700);margin-bottom:5px}
+.fg label span{color:var(--blue);margin-left:2px}
+.iw{position:relative}
+.iw .fi{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--slate-400);font-size:13px;pointer-events:none}
+.iw input,.iw select{width:100%;padding:10px 14px 10px 36px;border:1.5px solid var(--slate-200);border-radius:9px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--slate-50);outline:none;-webkit-appearance:none;transition:border-color .18s,box-shadow .18s}
+.iw input:focus,.iw select:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,0.12)}
+.eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--slate-400);font-size:13px}
+.divlabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--slate-400);display:flex;align-items:center;gap:8px;margin:4px 0 2px}
+.divlabel::before,.divlabel::after{content:'';flex:1;height:1px;background:var(--slate-200)}
+.btn{width:100%;margin-top:10px;padding:12px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s;box-shadow:0 4px 14px rgba(37,99,235,0.35)}
+.btn:hover:not(:disabled){opacity:.92}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.foot{text-align:center;margin-top:16px;font-size:13px;color:var(--slate-400)}
+.foot a{color:var(--blue);font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-top">
+    <div class="logo"><i class="fa-solid fa-graduation-cap"></i> StudyTribe</div>
+    <h2>Create Your Account</h2>
+    <p>Join thousands of students studying smarter together</p>
+  </div>
+  <div class="card-body">
+    <div class="alert" id="alert"></div>
+    <form id="form" action="/api/auth/register" method="post">
+      <div class="grid">
+        <div class="fg"><label>Full Name <span>*</span></label>
+          <div class="iw"><i class="fa-solid fa-user fi"></i><input type="text" id="name" name="name" placeholder="Enter your name" required/></div></div>
+        <div class="fg"><label>Institutional Email <span>*</span></label>
+          <div class="iw"><i class="fa-solid fa-envelope fi"></i><input type="email" id="email" name="email" placeholder="Enter your email" required/></div></div>
+        <div class="divlabel">Academic Details</div>
+        <div class="fg"><label>Roll Number</label>
+          <div class="iw"><i class="fa-solid fa-id-badge fi"></i><input type="text" id="roll" name="roll_number" placeholder="Enter your roll number"/></div></div>
+        <div class="grid-2">
+          <div class="fg"><label>Department</label>
+            <div class="iw"><i class="fa-solid fa-building-columns fi"></i>
+              <select id="dept" name="department"><option value="">Select dept.</option><option>Computer Science</option><option>Electrical Engineering</option><option>Mechanical Engineering</option><option>Civil Engineering</option><option>Mathematics</option><option>Applied Physics</option><option>Chemistry</option><option>Business Administration</option></select></div></div>
+          <div class="fg"><label>Year</label>
+            <div class="iw"><i class="fa-solid fa-calendar fi"></i>
+              <select id="year" name="year"><option value="">Year</option><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option><option value="5">5th Year</option></select></div></div>
+        </div>
+        <div class="divlabel">Security</div>
+        <div class="fg"><label>Password <span>*</span></label>
+          <div class="iw"><i class="fa-solid fa-lock fi"></i><input type="password" id="pwd" name="password" placeholder="Minimum 6 characters" required/>
+            <button type="button" class="eye" onclick="tp('pwd','e1')"><i class="fa-solid fa-eye" id="e1"></i></button></div></div>
+        <div class="fg"><label>Confirm Password <span>*</span></label>
+          <div class="iw"><i class="fa-solid fa-shield-halved fi"></i><input type="password" id="cpwd" name="confirm_password" placeholder="Repeat your password" required/>
+            <button type="button" class="eye" onclick="tp('cpwd','e2')"><i class="fa-solid fa-eye" id="e2"></i></button></div></div>
+      </div>
+      <button class="btn" id="btn" type="submit"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+    </form>
+    <div class="foot">Already have an account? <a href="login.html">Sign In</a></div>
+  </div>
+</div>
+<script>
+if(localStorage.getItem('token')) window.location.href='dashboard.html';
+function tp(fId,iId){const f=document.getElementById(fId),i=document.getElementById(iId);f.type=f.type==='password'?'text':'password';i.className='fa-solid fa-eye'+(f.type==='text'?'-slash':'');}
+function showAlert(m,t){const e=document.getElementById('alert');e.className='alert alert-'+t+' show';e.innerHTML='<i class="fa-solid fa-'+(t==='error'?'circle-exclamation':'circle-check')+'"></i> '+m;}
+async function parseJSON(response){const text=await response.text();try{return text?JSON.parse(text):{};}catch{return{};}}
+document.getElementById('form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const name=document.getElementById('name').value.trim(),email=document.getElementById('email').value.trim(),pwd=document.getElementById('pwd').value,cpwd=document.getElementById('cpwd').value;
+  if(pwd!==cpwd){showAlert('Passwords do not match.','error');return;}
+  const btn=document.getElementById('btn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
+  try{
+    const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pwd,roll_number:document.getElementById('roll').value.trim()||null,department:document.getElementById('dept').value||null,year:document.getElementById('year').value||null})});
+    const d=await parseJSON(r);if(!r.ok)throw new Error(d.error||r.statusText||'Registration failed.');
+    localStorage.setItem('token',d.token);localStorage.setItem('user',JSON.stringify(d.user));
+    showAlert('Successfully registered!','success');
+    setTimeout(()=>window.location.href='dashboard.html',1000);
+  }catch(err){showAlert(err.message,'error');btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-user-plus"></i> Create Account';}
+});
+</script>
+</body>
+</html>

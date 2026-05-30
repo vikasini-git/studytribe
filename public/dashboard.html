@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard — StudyTribe</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<style>
+/* ── RESET & VARS ───────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#2563eb;--blue-d:#1d4ed8;--blue-deep:#1e3a8a;--blue-lt:#eff6ff;
+  --green:#10b981;--amber:#f59e0b;--red:#ef4444;--purple:#7c3aed;
+  --bg:#f0f4f8;--surface:#ffffff;--border:#e2e8f0;
+  --text:#1e293b;--muted:#64748b;--muted-lt:#94a3b8;
+  --sidebar-w:240px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex}
+
+/* ── SIDEBAR ─────────────────────────────────────────────────────────── */
+.sidebar{width:var(--sidebar-w);background:var(--blue-deep);display:flex;flex-direction:column;flex-shrink:0;height:100vh}
+.sb-logo{padding:18px 18px 14px;display:flex;align-items:center;gap:9px;font-size:18px;font-weight:700;color:#fff;border-bottom:1px solid rgba(255,255,255,0.1)}
+.sb-logo i{color:#fbbf24}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.sb-section{font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:rgba(255,255,255,0.35);padding:12px 18px 5px}
+.sb-item{display:flex;align-items:center;gap:11px;padding:9px 18px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,0.7);cursor:pointer;transition:background .15s,color .15s;border:none;background:none;width:100%;text-align:left}
+.sb-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.sb-item.active{background:rgba(255,255,255,0.14);color:#fff;font-weight:600}
+.sb-item i{width:17px;text-align:center;font-size:13px}
+.sb-badge{margin-left:auto;background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:50px}
+.sb-user{padding:14px 18px;border-top:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:11px}
+.sb-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.sb-info{flex:1;overflow:hidden}
+.sb-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-email{font-size:11px;color:rgba(255,255,255,0.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-logout{background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;padding:4px;font-size:14px}
+.sb-logout:hover{color:#fff}
+
+/* ── MAIN ────────────────────────────────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:58px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.topbar-left h1{font-size:17px;font-weight:700}
+.topbar-left p{font-size:12px;color:var(--muted)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn-primary{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .2s;font-family:'DM Sans',sans-serif}
+.btn-primary:hover{background:var(--blue-d)}
+.online-pill{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--green);background:#d1fae5;padding:5px 12px;border-radius:50px}
+.online-pill span{width:7px;height:7px;background:var(--green);border-radius:50%}
+
+.content{flex:1;overflow-y:auto;padding:22px 24px}
+
+/* ── PANELS ──────────────────────────────────────────────────────────── */
+.panel{display:none}
+.panel.active{display:block}
+
+/* ── OVERVIEW STATS ──────────────────────────────────────────────────── */
+.overview-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.ov-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;align-items:center;gap:14px}
+.ov-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ov-icon.blue{background:var(--blue-lt);color:var(--blue)}
+.ov-icon.green{background:#d1fae5;color:var(--green)}
+.ov-icon.amber{background:#fef3c7;color:var(--amber)}
+.ov-icon.purple{background:#ede9fe;color:var(--purple)}
+.ov-num{font-size:22px;font-weight:700;margin-bottom:2px}
+.ov-lbl{font-size:12px;color:var(--muted)}
+
+/* ── SECTION HEADER ──────────────────────────────────────────────────── */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sh h2{font-size:16px;font-weight:700}
+.sh p{font-size:13px;color:var(--muted)}
+
+/* ── GROUPS GRID ─────────────────────────────────────────────────────── */
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.g-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.g-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.07)}
+.g-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.subj-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:50px;background:var(--blue-lt);color:var(--blue)}
+.mode-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:50px}
+.mode-badge.online{background:#d1fae5;color:#065f46}
+.mode-badge.offline{background:#fef3c7;color:#92400e}
+.joined-badge{background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:3px 9px;border-radius:50px}
+.g-card h3{font-size:15px;font-weight:700;margin-bottom:5px}
+.g-card p{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.g-card-foot{display:flex;align-items:center;justify-content:space-between}
+.member-ct{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.btn-join{font-size:12px;font-weight:600;padding:6px 14px;border-radius:7px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.btn-join.join{background:var(--blue);color:#fff}
+.btn-join.join:hover{background:var(--blue-d)}
+.btn-join.open{background:var(--blue-lt);color:var(--blue)}
+.btn-join.open:hover{background:var(--blue);color:#fff}
+
+/* ── FILTER BAR ──────────────────────────────────────────────────────── */
+.filter-bar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.filter-bar input{flex:1;min-width:200px;padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.filter-bar input:focus{border-color:var(--blue)}
+.filter-select{padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer}
+.filter-select:focus{border-color:var(--blue)}
+
+/* ── CHAT OVERLAY ────────────────────────────────────────────────────── */
+.chat-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.chat-overlay.open{display:flex}
+.chat-modal{background:var(--surface);border-radius:16px;width:100%;max-width:680px;height:82vh;display:flex;flex-direction:column;box-shadow:0 30px 70px rgba(0,0,0,0.2);overflow:hidden}
+.chat-head{background:var(--blue-deep);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.chat-head-info h3{font-size:15px;font-weight:700}
+.chat-head-meta{display:flex;align-items:center;gap:12px;margin-top:2px}
+.chat-subj{font-size:12px;color:rgba(255,255,255,0.55)}
+.ch-online{font-size:11px;font-weight:600;color:#34d399;display:flex;align-items:center;gap:4px}
+.ch-online span{width:6px;height:6px;background:#34d399;border-radius:50%}
+.chat-tabs{display:flex;background:rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.1)}
+.chat-tab{flex:1;padding:9px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);background:none;border:none;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.chat-tab.active{background:rgba(255,255,255,0.12);color:#fff}
+.chat-tab-pane{display:none;flex:1;overflow:hidden;flex-direction:column}
+.chat-tab-pane.active{display:flex}
+.btn-close-chat{background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;padding:4px}
+.btn-close-chat:hover{color:#fff}
+/* messages */
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;background:#f8fafc}
+.chat-empty{text-align:center;color:var(--muted);font-size:14px;margin:auto}
+.sys-msg{text-align:center;font-size:11px;color:var(--muted);font-style:italic}
+.msg{display:flex;gap:8px;max-width:78%}
+.msg.mine{align-self:flex-end;flex-direction:row-reverse}
+.msg.theirs{align-self:flex-start}
+.msg-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.msg-bubble{display:flex;flex-direction:column;gap:2px}
+.msg-sender{font-size:10px;font-weight:600;color:var(--muted);padding:0 4px}
+.msg-text{padding:8px 12px;border-radius:12px;font-size:14px;line-height:1.45;word-break:break-word}
+.mine .msg-text{background:var(--blue);color:#fff;border-bottom-right-radius:3px}
+.theirs .msg-text{background:#fff;border:1px solid var(--border);border-bottom-left-radius:3px}
+.msg-time{font-size:10px;color:var(--muted);padding:0 4px}
+.mine .msg-time{text-align:right}
+.typing-bar{font-size:12px;color:var(--muted);font-style:italic;padding:4px 14px;flex-shrink:0;min-height:18px;background:#f8fafc}
+.chat-input-row{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:#fff;flex-shrink:0}
+.chat-input-row textarea{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:9px 13px;font-size:14px;font-family:'DM Sans',sans-serif;resize:none;outline:none;max-height:90px;line-height:1.4}
+.chat-input-row textarea:focus{border-color:var(--blue)}
+.btn-send{background:var(--blue);color:#fff;border:none;border-radius:10px;width:40px;height:40px;cursor:pointer;font-size:15px;flex-shrink:0;transition:background .2s}
+.btn-send:hover{background:var(--blue-d)}
+/* notes tab */
+.notes-list{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.note-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+.note-item-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.note-item-head h4{font-size:13px;font-weight:700}
+.note-meta{font-size:11px;color:var(--muted)}
+.note-item p{font-size:13px;color:var(--muted);line-height:1.5}
+.btn-del-note{background:none;border:none;color:var(--muted-lt);cursor:pointer;font-size:12px}
+.btn-del-note:hover{color:var(--red)}
+.notes-form{padding:12px 14px;border-top:1px solid var(--border);background:#fff;flex-shrink:0}
+.notes-form input,.notes-form textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'DM Sans',sans-serif;margin-bottom:7px;outline:none}
+.notes-form input:focus,.notes-form textarea:focus{border-color:var(--blue)}
+/* milestones tab */
+.ms-list{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.ms-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.ms-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.ms-check.done{background:var(--green);border-color:var(--green);color:#fff}
+.ms-body{flex:1}
+.ms-body h4{font-size:13px;font-weight:600}
+.ms-body h4.done{text-decoration:line-through;color:var(--muted)}
+.ms-body p{font-size:12px;color:var(--muted)}
+.ms-due{font-size:11px;color:var(--muted-lt)}
+.ms-form{padding:12px 14px;border-top:1px solid var(--border);background:#fff;flex-shrink:0;display:flex;gap:8px}
+.ms-form input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.ms-form input:focus{border-color:var(--blue)}
+
+/* ── AI MATCHING ────────────────────────────────────────────────────── */
+.ai-intro{background:linear-gradient(135deg,var(--blue-deep),var(--blue));border-radius:14px;padding:24px;color:#fff;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.ai-intro h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.ai-intro p{font-size:13px;color:rgba(255,255,255,0.75);max-width:420px;line-height:1.6}
+.ai-intro i{font-size:40px;color:#fbbf24;opacity:.9}
+.matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.match-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;transition:transform .15s,box-shadow .15s}
+.match-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.07)}
+.match-head{display:flex;align-items:center;gap:13px;margin-bottom:13px}
+.match-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
+.match-name{font-size:15px;font-weight:700;margin-bottom:2px}
+.match-dept{font-size:12px;color:var(--muted)}
+.match-pct-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.match-pct-bar{flex:1;height:6px;background:var(--border);border-radius:50px;margin:0 12px;overflow:hidden}
+.match-pct-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,var(--green),var(--blue))}
+.match-pct-num{font-size:14px;font-weight:700;color:var(--green)}
+.match-reasons{display:flex;flex-wrap:wrap;gap:5px}
+.match-reason{font-size:11px;font-weight:600;background:var(--blue-lt);color:var(--blue);padding:3px 9px;border-radius:50px}
+.no-skills-msg{background:var(--surface);border:2px dashed var(--border);border-radius:14px;padding:40px;text-align:center}
+.no-skills-msg i{font-size:36px;color:var(--muted-lt);margin-bottom:14px;display:block}
+.no-skills-msg p{color:var(--muted);margin-bottom:16px}
+
+/* ── SCHEDULE ────────────────────────────────────────────────────────── */
+.schedule-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.sessions-list{display:flex;flex-direction:column;gap:10px}
+.session-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:16px}
+.session-date-box{background:var(--blue-lt);border-radius:10px;padding:10px 14px;text-align:center;flex-shrink:0;min-width:60px}
+.session-date-box .day{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase}
+.session-date-box .num{font-size:22px;font-weight:700;color:var(--blue-deep)}
+.session-info{flex:1}
+.session-info h4{font-size:14px;font-weight:700;margin-bottom:3px}
+.session-info p{font-size:12px;color:var(--muted)}
+.session-tags{display:flex;gap:6px;margin-top:6px}
+.s-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:50px}
+.s-tag.time{background:#fef3c7;color:#92400e}
+.s-tag.online{background:#d1fae5;color:#065f46}
+.s-tag.offline{background:#e0e7ff;color:#3730a3}
+.btn-del-s{background:none;border:none;color:var(--muted-lt);cursor:pointer;font-size:13px;padding:4px}
+.btn-del-s:hover{color:var(--red)}
+.schedule-form{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;position:sticky;top:0}
+.schedule-form h3{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.schedule-form h3 i{color:var(--blue)}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--slate-700);margin-bottom:5px}
+.form-group input,.form-group select{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;background:#f8fafc}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue);background:#fff}
+.progress-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:18px}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;font-weight:700;color:var(--text)}
+.progress-bar{width:100%;height:10px;background:var(--border);border-radius:999px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--blue));width:0%;transition:width .35s ease}
+.progress-meta{font-size:12px;color:var(--muted);margin-top:10px}
+
+/* ── PROFILE ─────────────────────────────────────────────────────────── */
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.profile-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px}
+.profile-card h3{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.profile-card h3 i{color:var(--blue)}
+.profile-av-row{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.profile-av-big{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff}
+.profile-av-info h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.profile-av-info p{font-size:13px;color:var(--muted)}
+.pf-field{margin-bottom:13px}
+.pf-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.pf-field input,.pf-field select,.pf-field textarea{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;background:#f8fafc}
+.pf-field input:focus,.pf-field select:focus,.pf-field textarea:focus{border-color:var(--blue);background:#fff}
+.mode-row{display:flex;gap:10px}
+.mode-opt{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all .2s}
+.mode-opt.selected{border-color:var(--blue);background:var(--blue-lt);color:var(--blue)}
+/* skills */
+.skills-section{}
+.skills-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:220px;overflow-y:auto}
+.skill-row{display:flex;align-items:center;gap:10px;background:#f8fafc;border-radius:8px;padding:8px 12px}
+.skill-row .sk-name{flex:1;font-size:13px;font-weight:500}
+.skill-row .sk-lvl{font-size:11px;font-weight:700;padding:2px 9px;border-radius:50px}
+.sk-lvl.strong{background:#d1fae5;color:#065f46}
+.sk-lvl.weak{background:#fee2e2;color:#991b1b}
+.btn-del-sk{background:none;border:none;color:var(--muted-lt);cursor:pointer;font-size:12px}
+.btn-del-sk:hover{color:var(--red)}
+.add-skill-row{display:flex;gap:8px}
+.add-skill-row input{flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.add-skill-row input:focus{border-color:var(--blue)}
+.add-skill-row select{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+
+/* ── MODAL ───────────────────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:16px;padding:26px;width:100%;max-width:420px;box-shadow:0 25px 60px rgba(0,0,0,0.18)}
+.modal-box h2{font-size:17px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.modal-box h2 i{color:var(--blue)}
+.modal-field{margin-bottom:12px}
+.modal-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.modal-field input,.modal-field select,.modal-field textarea{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.modal-field input:focus,.modal-field select:focus,.modal-field textarea:focus{border-color:var(--blue)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.btn-cancel{background:#f1f5f9;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-cancel:hover{background:var(--border)}
+
+/* ── TOAST ───────────────────────────────────────────────────────────── */
+.toast{position:fixed;bottom:20px;right:20px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
+.toast.error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+
+/* ── LOADING ─────────────────────────────────────────────────────────── */
+.loading{text-align:center;color:var(--muted);padding:40px}
+.loading i{font-size:22px;margin-bottom:8px;display:block}
+
+/* ── EMPTY STATE ─────────────────────────────────────────────────────── */
+.empty{text-align:center;color:var(--muted);padding:40px;background:var(--surface);border:2px dashed var(--border);border-radius:14px}
+.empty i{font-size:32px;color:var(--muted-lt);margin-bottom:12px;display:block}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────────────── */
+@media(max-width:900px){
+  .sidebar{display:none}
+  .overview-stats{grid-template-columns:1fr 1fr}
+  .schedule-grid{grid-template-columns:1fr}
+  .profile-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .overview-stats{grid-template-columns:1fr 1fr}
+  .content{padding:14px 14px}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo"><i class="fa-solid fa-graduation-cap"></i> StudyTribe</div>
+  <nav class="sb-nav">
+    <div class="sb-section">Workspace</div>
+    <button class="sb-item active" data-panel="overview"><i class="fa-solid fa-house"></i> Overview</button>
+    <button class="sb-item" data-panel="explore"><i class="fa-solid fa-compass"></i> Explore Groups</button>
+    <button class="sb-item" data-panel="mine"><i class="fa-solid fa-bookmark"></i> My Groups</button>
+    <div class="sb-section">Tools</div>
+    <button class="sb-item" data-panel="ai"><i class="fa-solid fa-brain"></i> AI Matching</button>
+    <button class="sb-item" data-panel="schedule"><i class="fa-solid fa-calendar-check"></i> Schedule</button>
+    <div class="sb-section">Account</div>
+    <button class="sb-item" data-panel="profile"><i class="fa-solid fa-user-circle"></i> Profile & Skills</button>
+    <button class="sb-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</button>
+  </nav>
+  <div class="sb-user">
+    <div class="sb-av" id="sbAv">?</div>
+    <div class="sb-info"><div class="sb-name" id="sbName">…</div><div class="sb-email" id="sbEmail"></div></div>
+    <button class="sb-logout" onclick="logout()" title="Sign out"><i class="fa-solid fa-power-off"></i></button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 id="topbarTitle">Overview</h1>
+      <p id="topbarSub">Welcome back!</p>
+    </div>
+    <div class="topbar-right">
+      <div class="online-pill"><span></span> <span id="liveCount">0</span> online</div>
+      <button class="btn-primary" id="topbarAction" onclick="openCreateGroup()"><i class="fa-solid fa-plus"></i> Create Group</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="overview-stats">
+        <div class="ov-card"><div class="ov-icon blue"><i class="fa-solid fa-users"></i></div><div><div class="ov-num" id="ovGroups">0</div><div class="ov-lbl">My Groups</div></div></div>
+        <div class="ov-card"><div class="ov-icon green"><i class="fa-solid fa-comments"></i></div><div><div class="ov-num" id="ovMsgs">—</div><div class="ov-lbl">Chats Active</div></div></div>
+        <div class="ov-card"><div class="ov-icon amber"><i class="fa-solid fa-calendar-check"></i></div><div><div class="ov-num" id="ovSessions">0</div><div class="ov-lbl">Upcoming Sessions</div></div></div>
+        <div class="ov-card"><div class="ov-icon green"><i class="fa-solid fa-flag-checkered"></i></div><div><div class="ov-num" id="ovProgress">No goals</div><div class="ov-lbl" id="ovProgressLabel">Milestone Progress</div></div></div>
+        <div class="ov-card"><div class="ov-icon purple"><i class="fa-solid fa-brain"></i></div><div><div class="ov-num" id="ovMatches">—</div><div class="ov-lbl">AI Matches</div></div></div>
+      </div>
+      <div class="sh"><h2>My Study Groups</h2><button class="btn-primary" onclick="switchPanel('explore')"><i class="fa-solid fa-compass"></i> Explore All</button></div>
+      <div class="groups-grid" id="overviewGroupsGrid"><div class="loading"><i class="fa-solid fa-spinner fa-spin"></i>Loading…</div></div>
+    </div>
+
+    <!-- EXPLORE -->
+    <div class="panel" id="panel-explore">
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="Search groups by name or subject…" oninput="filterGroups()"/>
+        <select class="filter-select" id="modeFilter" onchange="filterGroups()">
+          <option value="">All Modes</option><option value="online">Online</option><option value="offline">Offline</option>
+        </select>
+      </div>
+      <div class="groups-grid" id="exploreGrid"><div class="loading"><i class="fa-solid fa-spinner fa-spin"></i>Loading groups…</div></div>
+    </div>
+
+    <!-- MY GROUPS -->
+    <div class="panel" id="panel-mine">
+      <div class="groups-grid" id="mineGrid"><div class="loading"><i class="fa-solid fa-spinner fa-spin"></i>Loading your groups…</div></div>
+    </div>
+
+    <!-- AI MATCHING -->
+    <div class="panel" id="panel-ai">
+      <div class="ai-intro">
+        <div><h2><i class="fa-solid fa-wand-magic-sparkles" style="color:#fbbf24;margin-right:8px"></i>AI Partner Matching</h2>
+          <p>Our skill-gap compatibility engine finds students whose strengths cover your weak subjects — and who can learn from your strengths.</p>
+          <button class="btn-primary" style="margin-top:14px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3)" onclick="loadAIMatches()"><i class="fa-solid fa-rotate"></i> Refresh Matches</button>
+        </div>
+        <i class="fa-solid fa-brain" style="font-size:48px;color:rgba(255,255,255,0.3)"></i>
+      </div>
+      <div id="aiMatchContainer"><div class="loading"><i class="fa-solid fa-spinner fa-spin"></i>Analysing skill gaps…</div></div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="panel" id="panel-schedule">
+      <div class="schedule-grid">
+        <div>
+          <div class="sh" style="margin-bottom:14px"><h2>Upcoming Sessions</h2></div>
+          <div class="progress-box"><div class="progress-header"><span>Milestone progress</span><span id="scheduleProgressPct">0%</span></div><div class="progress-bar"><div class="progress-fill" id="scheduleProgressFill"></div></div><div class="progress-meta" id="scheduleProgressMeta">No milestones yet.</div></div>
+          <div id="sessionsList"><div class="loading"><i class="fa-solid fa-spinner fa-spin"></i>Loading…</div></div>
+        </div>
+        <div class="schedule-form">
+          <h3><i class="fa-solid fa-calendar-plus"></i> Schedule a Session</h3>
+          <div class="form-group"><label>Session Title</label><input type="text" id="schTitle" placeholder="e.g. DSA Mock Test Prep"/></div>
+          <div class="form-group"><label>Study Group</label><select id="schGroup"><option value="">Select a group…</option></select></div>
+          <div class="form-group"><label>Date</label><input type="date" id="schDate"/></div>
+          <div class="form-group"><label>Time</label><input type="time" id="schTime"/></div>
+          <div class="form-group"><label>Duration (minutes)</label><input type="number" id="schDur" value="60" min="15" max="480"/></div>
+          <div class="form-group"><label>Mode</label>
+            <select id="schMode"><option value="online">Online</option><option value="offline">Offline / In-person</option></select></div>
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:11px" onclick="addSession()"><i class="fa-solid fa-plus"></i> Add Session</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="panel" id="panel-profile">
+      <div class="profile-grid">
+        <!-- Left: profile form -->
+        <div class="profile-card">
+          <h3><i class="fa-solid fa-user-circle"></i> Your Profile</h3>
+          <div class="profile-av-row">
+            <div class="profile-av-big" id="pfAv">?</div>
+            <div class="profile-av-info"><h2 id="pfName">…</h2><p id="pfDept"></p></div>
+          </div>
+          <div class="pf-field"><label>Full Name</label><input type="text" id="pfNameInput"/></div>
+          <div class="pf-field"><label>Roll Number</label><input type="text" id="pfRoll"/></div>
+          <div class="pf-field"><label>Department</label>
+            <select id="pfDeptSel"><option value="">Select</option><option>Computer Science</option><option>Electrical Engineering</option><option>Mechanical Engineering</option><option>Civil Engineering</option><option>Mathematics</option><option>Applied Physics</option><option>Chemistry</option><option>Business Administration</option></select></div>
+          <div class="pf-field"><label>Year of Study</label>
+            <select id="pfYear"><option value="">Select</option><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option><option value="5">5th Year</option></select></div>
+          <div class="pf-field"><label>Bio</label><textarea id="pfBio" rows="3" placeholder="Tell others about yourself…"></textarea></div>
+          <div class="pf-field"><label>Study Mode Preference</label>
+            <div class="mode-row">
+              <div class="mode-opt" id="modeOnline" onclick="setMode('online')"><i class="fa-solid fa-wifi"></i> Online</div>
+              <div class="mode-opt" id="modeOffline" onclick="setMode('offline')"><i class="fa-solid fa-person-chalkboard"></i> Offline</div>
+            </div>
+          </div>
+          <button class="btn-primary" style="width:100%;justify-content:center;margin-top:6px" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Save Profile</button>
+        </div>
+        <!-- Right: skill tags -->
+        <div class="profile-card">
+          <h3><i class="fa-solid fa-tags"></i> Skill Tags</h3>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Tag subjects as <strong>Strong</strong> (you can help others) or <strong>Weak</strong> (you need help). The AI uses these to find your ideal study partners.</p>
+          <div class="skills-list" id="skillsList"></div>
+          <div class="add-skill-row">
+            <input type="text" id="newSkillInput" placeholder="Subject (e.g. Data Structures)" list="subjList"/>
+            <datalist id="subjList"></datalist>
+            <select id="newSkillLevel"><option value="strong">Strong ✓</option><option value="weak">Weak ✗</option></select>
+            <button class="btn-primary" onclick="addSkill()"><i class="fa-solid fa-plus"></i></button>
+          </div>
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:8px;flex-wrap:wrap" id="skillPreview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- CHAT OVERLAY -->
+<div class="chat-overlay" id="chatOverlay">
+  <div class="chat-modal">
+    <div class="chat-head">
+      <div class="chat-head-info">
+        <h3 id="chatGroupName">Group Chat</h3>
+        <div class="chat-head-meta">
+          <span class="chat-subj" id="chatSubj"></span>
+          <span class="ch-online"><span></span><span id="chatOnline">0</span> online</span>
+        </div>
+      </div>
+      <button class="btn-close-chat" onclick="closeChat()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="chat-tabs">
+      <button class="chat-tab active" onclick="switchChatTab('messages',this)"><i class="fa-solid fa-comments"></i> Chat</button>
+      <button class="chat-tab" onclick="switchChatTab('notes',this)"><i class="fa-solid fa-book-open"></i> Notes</button>
+      <button class="chat-tab" onclick="switchChatTab('milestones',this)"><i class="fa-solid fa-flag"></i> Milestones</button>
+    </div>
+    <!-- Messages pane -->
+    <div class="chat-tab-pane active" id="pane-messages">
+      <div class="chat-msgs" id="chatMsgs"><div class="chat-empty">No messages yet. Say hello!</div></div>
+      <div class="typing-bar" id="typingBar"></div>
+      <div class="chat-input-row">
+        <textarea id="msgInput" placeholder="Type a message… (Enter to send)" rows="1"></textarea>
+        <button class="btn-send" onclick="sendMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+    <!-- Notes pane -->
+    <div class="chat-tab-pane" id="pane-notes">
+      <div class="notes-list" id="notesList"></div>
+      <div class="notes-form">
+        <input type="text" id="noteTitle" placeholder="Note title…"/>
+        <textarea id="noteContent" rows="2" placeholder="Write your note here…"></textarea>
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="addNote()"><i class="fa-solid fa-plus"></i> Add Note</button>
+      </div>
+    </div>
+    <!-- Milestones pane -->
+    <div class="chat-tab-pane" id="pane-milestones">
+      <div class="ms-list" id="msList"></div>
+      <div class="ms-form">
+        <input type="text" id="msTitle" placeholder="Milestone title…"/>
+        <input type="date" id="msDate"/>
+        <button class="btn-primary" onclick="addMilestone()"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE GROUP MODAL -->
+<div class="modal-overlay" id="createGroupModal">
+  <div class="modal-box">
+    <h2><i class="fa-solid fa-users"></i> Create Study Group</h2>
+    <div class="modal-field"><label>Group Name</label><input type="text" id="cgName" placeholder="e.g. Algorithms Study Hall"/></div>
+    <div class="modal-field"><label>Subject / Course</label><input type="text" id="cgSubject" placeholder="e.g. Computer Science" list="subjList2"/><datalist id="subjList2"></datalist></div>
+    <div class="modal-field"><label>Description</label><textarea id="cgDesc" rows="3" placeholder="What will you cover?"></textarea></div>
+    <div class="modal-field"><label>Mode</label>
+      <select id="cgMode"><option value="online">Online</option><option value="offline">Offline / In-person</option></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('createGroupModal')">Cancel</button>
+      <button class="btn-primary" onclick="createGroup()"><i class="fa-solid fa-check"></i> Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+const token  = localStorage.getItem('token');
+const user   = JSON.parse(localStorage.getItem('user') || 'null');
+if (!token || !user) window.location.href = 'login.html';
+
+let socket         = null;
+let activeGroupId  = null;
+let allGroups      = [];
+let mySkills       = [];
+let profileMode    = 'online';
+let typingTimer    = null;
+let isTyping       = false;
+let typingUsers    = {};
+const COLORS = ['#2563eb','#7c3aed','#059669','#d97706','#dc2626','#0891b2','#db2777'];
+function avatarColor(ch){ return COLORS[(ch?.charCodeAt(0)||0) % COLORS.length]; }
+function initials(name){ return (name||'?').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2); }
+function esc(s){ if(!s)return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtTime(ts){ return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(d){ if(!d)return ''; const dt=new Date(d); return dt.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}); }
+
+// ═══════════════════════════════════════════════════════════════
+//  API
+// ═══════════════════════════════════════════════════════════════
+async function parseJSON(response){const text=await response.text();try{return text?JSON.parse(text):{};}catch{return{};}}
+async function api(path, opts={}) {
+  const r = await fetch('/api'+path, { ...opts, headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token, ...(opts.headers||{}) } });
+  const d = await parseJSON(r);
+  if (!r.ok) throw new Error(d.error || r.statusText || 'Request failed.');
+  return d;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  // Sidebar user
+  const ini = initials(user.name);
+  const col = avatarColor(user.name[0]);
+  document.getElementById('sbAv').textContent = ini;
+  document.getElementById('sbAv').style.background = col;
+  document.getElementById('sbName').textContent = user.name;
+  document.getElementById('sbEmail').textContent = user.email;
+
+  // Panel nav
+  document.querySelectorAll('.sb-item[data-panel]').forEach(btn => {
+    btn.addEventListener('click', () => switchPanel(btn.dataset.panel));
+  });
+
+  // Chat input
+  document.getElementById('msgInput').addEventListener('keydown', e => {
+    if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMsg(); }
+  });
+  document.getElementById('msgInput').addEventListener('input', handleTyping);
+
+  // Modal backdrop
+  document.getElementById('chatOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeChat(); });
+  document.getElementById('createGroupModal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal('createGroupModal'); });
+  document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeChat(); closeModal('createGroupModal'); } });
+
+  // Socket
+  initSocket();
+
+  // Load data
+  await loadAllGroups();
+  loadOverview();
+  loadScheduleGroups();
+  loadProfile();
+  loadSubjects();
+});
+
+function switchPanel(name) {
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.sb-item[data-panel="${name}"]`)?.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name)?.classList.add('active');
+  const titles = { overview:'Overview', explore:'Explore Groups', mine:'My Groups', ai:'AI Partner Matching', schedule:'Smart Scheduling', profile:'Profile & Skills' };
+  document.getElementById('topbarTitle').textContent = titles[name] || name;
+  if (name==='explore') loadAllGroups();
+  if (name==='mine') loadMyGroups();
+  if (name==='ai') loadAIMatches();
+  if (name==='schedule') loadSessions();
+  if (name==='profile') loadProfile();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SOCKET.IO
+// ═══════════════════════════════════════════════════════════════
+function initSocket() {
+  socket = io({ auth:{ token } });
+  socket.on('connect', () => toast('Connected ●','success'));
+  socket.on('disconnect', () => toast('Disconnected','error'));
+  socket.on('chat_history', renderHistory);
+  socket.on('new_message', appendMsg);
+  socket.on('system_message', ({ text }) => appendSys(text));
+  socket.on('presence_update', ({ onlineCount }) => {
+    document.getElementById('chatOnline').textContent = onlineCount;
+    document.getElementById('liveCount').textContent = onlineCount;
+  });
+  socket.on('user_typing', ({ userName, isTyping: it }) => {
+    if (it) typingUsers[userName]=true; else delete typingUsers[userName];
+    const names = Object.keys(typingUsers);
+    document.getElementById('typingBar').textContent = names.length ? names.join(', ')+(names.length>1?' are':' is')+' typing…' : '';
+  });
+  socket.on('error', ({ message }) => toast(message,'error'));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GROUPS
+// ═══════════════════════════════════════════════════════════════
+async function loadAllGroups() {
+  try {
+    allGroups = await api('/groups');
+    renderExploreGrid(allGroups);
+    document.getElementById('ovGroups').textContent = allGroups.filter(g=>g.is_member).length;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function loadMyGroups() {
+  const grid = document.getElementById('mineGrid');
+  grid.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i>Loading…</div>';
+  try {
+    const groups = await api('/groups/mine');
+    if (!groups.length) { grid.innerHTML = '<div class="empty"><i class="fa-solid fa-bookmark"></i><p>You haven\'t joined any groups yet.</p></div>'; return; }
+    grid.innerHTML = groups.map(g => groupCard(g, true)).join('');
+    wireCards(grid);
+  } catch(e) { grid.innerHTML = `<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i><p>${e.message}</p></div>`; }
+}
+
+function loadOverview() {
+  const mine = allGroups.filter(g=>g.is_member);
+  document.getElementById('ovGroups').textContent = mine.length;
+  document.getElementById('overviewGroupsGrid').innerHTML = mine.length
+    ? mine.slice(0,6).map(g=>groupCard(g,true)).join('')
+    : '<div class="empty"><i class="fa-solid fa-users"></i><p>No groups yet. <a href="#" onclick="switchPanel(\'explore\')">Explore groups</a></p></div>';
+  wireCards(document.getElementById('overviewGroupsGrid'));
+}
+
+function renderExploreGrid(groups) {
+  const grid = document.getElementById('exploreGrid');
+  grid.innerHTML = groups.length ? groups.map(g=>groupCard(g, false)).join('') : '<div class="empty"><i class="fa-solid fa-magnifying-glass"></i><p>No groups found.</p></div>';
+  wireCards(grid);
+}
+
+function groupCard(g, showOpen) {
+  const modeBadge = `<span class="mode-badge ${g.mode}">${g.mode==='online'?'🌐 Online':'📍 Offline'}</span>`;
+  const actionBtn = g.is_member
+    ? `<button class="btn-join open" onclick="event.stopPropagation();openChat('${g.id}')">Open Chat →</button>`
+    : `<button class="btn-join join" onclick="event.stopPropagation();joinGroup('${g.id}')">Join Group</button>`;
+  return `<div class="g-card" data-gid="${g.id}">
+    <div class="g-card-top"><span class="subj-badge">${esc(g.subject)}</span>${g.is_member?'<span class="joined-badge">✓ Joined</span>':modeBadge}</div>
+    <h3>${esc(g.name)}</h3>
+    <p>${esc(g.description||'A collaborative study group for this subject.')}</p>
+    <div class="g-card-foot"><span class="member-ct"><i class="fa-solid fa-users"></i> ${g.member_count||0} member${(g.member_count||0)!==1?'s':''}</span>${actionBtn}</div>
+  </div>`;
+}
+
+function wireCards(container) {
+  container.querySelectorAll('.g-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const gid = card.dataset.gid;
+      const g = allGroups.find(x=>x.id===gid);
+      if (g?.is_member) openChat(gid);
+      else if (gid) joinGroup(gid);
+    });
+  });
+}
+
+function filterGroups() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const m = document.getElementById('modeFilter').value;
+  const filtered = allGroups.filter(g =>
+    (!q || g.name.toLowerCase().includes(q) || g.subject.toLowerCase().includes(q)) &&
+    (!m || g.mode===m)
+  );
+  renderExploreGrid(filtered);
+}
+
+async function joinGroup(groupId) {
+  try {
+    await api(`/groups/${groupId}/join`, { method:'POST' });
+    toast('Joined group!','success');
+    await loadAllGroups();
+    loadOverview();
+    await loadScheduleGroups();
+    openChat(groupId);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function openCreateGroup() { openModal('createGroupModal'); }
+async function createGroup() {
+  const name = document.getElementById('cgName').value.trim();
+  const subject = document.getElementById('cgSubject').value.trim();
+  const description = document.getElementById('cgDesc').value.trim();
+  const mode = document.getElementById('cgMode').value;
+  if (!name || !subject) { toast('Name and subject required','error'); return; }
+  try {
+    await api('/groups', { method:'POST', body:JSON.stringify({ name, subject, description, mode }) });
+    closeModal('createGroupModal');
+    toast('Group created!','success');
+    document.getElementById('cgName').value='';
+    document.getElementById('cgSubject').value='';
+    document.getElementById('cgDesc').value='';
+    await loadAllGroups();
+    loadOverview();
+    await loadScheduleGroups();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CHAT
+// ═══════════════════════════════════════════════════════════════
+async function openChat(groupId) {
+  if (!socket?.connected) { toast('Not connected to server','error'); return; }
+  if (activeGroupId && activeGroupId!==groupId) socket.emit('leave_room',{ groupId:activeGroupId });
+  activeGroupId = groupId;
+  typingUsers = {};
+  const g = allGroups.find(x=>x.id===groupId) || await api(`/groups/${groupId}`);
+  document.getElementById('chatGroupName').textContent = g.name;
+  document.getElementById('chatSubj').textContent = g.subject;
+  document.getElementById('chatMsgs').innerHTML = '<div class="chat-empty"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+  document.getElementById('chatOverlay').classList.add('open');
+  socket.emit('join_room',{ groupId });
+  // reset to messages tab
+  switchChatTab('messages', document.querySelector('.chat-tab'));
+  loadNotes(groupId);
+  loadMilestones(groupId);
+  setTimeout(()=>document.getElementById('msgInput').focus(),100);
+}
+
+function closeChat() {
+  if (activeGroupId && socket?.connected) socket.emit('leave_room',{ groupId:activeGroupId });
+  activeGroupId = null; typingUsers = {};
+  document.getElementById('chatOverlay').classList.remove('open');
+  document.getElementById('msgInput').value='';
+  document.getElementById('typingBar').textContent='';
+}
+
+function switchChatTab(name, btn) {
+  document.querySelectorAll('.chat-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.chat-tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.chat-tab').forEach(t=>{ if(t.textContent.toLowerCase().includes(name.split('')[0])) t.classList.add('active'); });
+  document.getElementById('pane-'+name)?.classList.add('active');
+  // crude but works for 3 tabs
+  document.querySelectorAll('.chat-tab').forEach((t,i)=>{ const names=['messages','notes','milestones']; if(names[i]===name) t.classList.add('active'); });
+}
+
+function sendMsg() {
+  const inp = document.getElementById('msgInput');
+  const text = inp.value.trim();
+  if (!text || !activeGroupId || !socket?.connected) return;
+  socket.emit('send_message',{ groupId:activeGroupId, text });
+  inp.value='';
+  if (isTyping){ isTyping=false; socket.emit('typing',{ groupId:activeGroupId, isTyping:false }); clearTimeout(typingTimer); }
+}
+
+function handleTyping() {
+  if (!socket||!activeGroupId) return;
+  if (!isTyping){ isTyping=true; socket.emit('typing',{ groupId:activeGroupId, isTyping:true }); }
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(()=>{ isTyping=false; socket.emit('typing',{ groupId:activeGroupId, isTyping:false }); },1500);
+}
+
+function renderHistory(msgs) {
+  const c = document.getElementById('chatMsgs');
+  if (!msgs.length){ c.innerHTML='<div class="chat-empty">No messages yet. Say hello!</div>'; return; }
+  c.innerHTML = msgs.map(buildMsgHTML).join('');
+  c.scrollTop = c.scrollHeight;
+}
+
+function appendMsg(m) {
+  const c = document.getElementById('chatMsgs');
+  c.querySelector('.chat-empty')?.remove();
+  c.insertAdjacentHTML('beforeend', buildMsgHTML(m));
+  c.scrollTop = c.scrollHeight;
+}
+
+function appendSys(text) {
+  const c = document.getElementById('chatMsgs');
+  c.insertAdjacentHTML('beforeend',`<div class="sys-msg">${esc(text)}</div>`);
+  c.scrollTop = c.scrollHeight;
+}
+
+function buildMsgHTML(m) {
+  const mine = m.student_id===user.id;
+  const ini = initials(m.user_name);
+  const col = avatarColor((m.user_name||'?')[0]);
+  const t = fmtTime(m.created_at||m.time);
+  return `<div class="msg ${mine?'mine':'theirs'}">
+    ${!mine?`<div class="msg-av" style="background:${col}">${ini}</div>`:''}
+    <div class="msg-bubble">
+      ${!mine?`<div class="msg-sender">${esc(m.user_name)}</div>`:''}
+      <div class="msg-text">${esc(m.text)}</div>
+      <div class="msg-time">${t}</div>
+    </div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NOTES
+// ═══════════════════════════════════════════════════════════════
+async function loadNotes(groupId) {
+  try {
+    const notes = await api(`/groups/${groupId}/notes`);
+    const c = document.getElementById('notesList');
+    c.innerHTML = notes.length ? notes.map(n=>`
+      <div class="note-item">
+        <div class="note-item-head">
+          <h4>${esc(n.title)}</h4>
+          <button class="btn-del-note" onclick="delNote('${n.id}','${groupId}')"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <p class="note-meta">${esc(n.user_name)} · ${fmtDate(n.created_at)}</p>
+        <p>${esc(n.content)}</p>
+      </div>`).join('') : '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No notes yet. Add the first one!</div>';
+  } catch(e) {}
+}
+
+async function addNote() {
+  const title = document.getElementById('noteTitle').value.trim();
+  const content = document.getElementById('noteContent').value.trim();
+  if (!title || !content || !activeGroupId) { toast('Title and content required','error'); return; }
+  try {
+    await api(`/groups/${activeGroupId}/notes`,{ method:'POST', body:JSON.stringify({ title, content }) });
+    document.getElementById('noteTitle').value='';
+    document.getElementById('noteContent').value='';
+    loadNotes(activeGroupId);
+    toast('Note added!','success');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function delNote(noteId, groupId) {
+  try { await api(`/groups/${groupId}/notes/${noteId}`,{ method:'DELETE' }); loadNotes(groupId); toast('Note deleted','success'); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MILESTONES
+// ═══════════════════════════════════════════════════════════════
+async function loadMilestones(groupId) {
+  try {
+    const ms = await api(`/groups/${groupId}/milestones`);
+    const c = document.getElementById('msList');
+    c.innerHTML = ms.length ? ms.map(m=>`
+      <div class="ms-item">
+        <div class="ms-check ${m.completed?'done':''}" onclick="toggleMs('${m.id}','${groupId}')">
+          ${m.completed?'<i class="fa-solid fa-check" style="font-size:10px"></i>':''}
+        </div>
+        <div class="ms-body">
+          <h4 class="${m.completed?'done':''}">${esc(m.title)}</h4>
+          ${m.due_date?`<p class="ms-due"><i class="fa-regular fa-calendar"></i> Due ${fmtDate(m.due_date)}</p>`:''}
+        </div>
+        <button class="btn-del-note" onclick="delMs('${m.id}','${groupId}')"><i class="fa-solid fa-trash"></i></button>
+      </div>`).join('') : '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No milestones yet.</div>';
+  } catch(e) {}
+}
+
+async function addMilestone() {
+  const title = document.getElementById('msTitle').value.trim();
+  const due_date = document.getElementById('msDate').value;
+  if (!title || !activeGroupId) { toast('Milestone title required','error'); return; }
+  try {
+    await api(`/groups/${activeGroupId}/milestones`,{ method:'POST', body:JSON.stringify({ title, due_date }) });
+    document.getElementById('msTitle').value='';
+    document.getElementById('msDate').value='';
+    loadMilestones(activeGroupId);
+    await loadProgressTracker();
+    toast('Milestone added!','success');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function toggleMs(id, groupId) {
+  try { await api(`/groups/${groupId}/milestones/${id}/toggle`,{ method:'PATCH' }); loadMilestones(groupId); await loadProgressTracker(); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+async function delMs(id, groupId) {
+  try { await api(`/groups/${groupId}/milestones/${id}`,{ method:'DELETE' }); loadMilestones(groupId); await loadProgressTracker(); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  AI MATCHING
+// ═══════════════════════════════════════════════════════════════
+async function loadAIMatches() {
+  const c = document.getElementById('aiMatchContainer');
+  c.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i>Analysing skill gaps…</div>';
+  try {
+    const { matches, message } = await api('/profile/ai-matches');
+    document.getElementById('ovMatches').textContent = matches.length || '—';
+    if (!matches.length) {
+      c.innerHTML = `<div class="no-skills-msg"><i class="fa-solid fa-tags"></i><p>${message || 'No matches found. Add skill tags in your Profile first.'}</p>
+        <button class="btn-primary" onclick="switchPanel('profile')"><i class="fa-solid fa-tags"></i> Add Skill Tags</button></div>`;
+      return;
+    }
+    c.innerHTML = `<div class="sh"><h2>${matches.length} Compatible Study Partners Found</h2></div>
+      <div class="matches-grid">${matches.map(m=>`
+      <div class="match-card">
+        <div class="match-head">
+          <div class="match-av" style="background:${m.student.avatar_color||avatarColor((m.student.name||'?')[0])}">${initials(m.student.name)}</div>
+          <div><div class="match-name">${esc(m.student.name)}</div>
+            <div class="match-dept">${esc(m.student.department||'—')} ${m.student.year?'· Year '+m.student.year:''}</div></div>
+        </div>
+        <div class="match-pct-row">
+          <span style="font-size:12px;color:var(--muted)">Compatibility</span>
+          <div class="match-pct-bar"><div class="match-pct-fill" style="width:${m.pct}%"></div></div>
+          <span class="match-pct-num">${m.pct}%</span>
+        </div>
+        <div class="match-reasons">${m.reasons.map(r=>`<span class="match-reason">${esc(r)}</span>`).join('')}</div>
+      </div>`).join('')}</div>`;
+  } catch(e) { c.innerHTML = `<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i><p>${e.message}</p></div>`; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SCHEDULE
+// ═══════════════════════════════════════════════════════════════
+async function loadScheduleGroups() {
+  try {
+    const groups = await api('/groups/mine');
+    const sel = document.getElementById('schGroup');
+    sel.innerHTML = '<option value="">Select a group…</option>' + groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
+    await loadProgressTracker();
+  } catch(e) {}
+}
+
+async function loadSessions() {
+  const c = document.getElementById('sessionsList');
+  c.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i>Loading…</div>';
+  try {
+    const sessions = await api('/profile/schedules');
+    document.getElementById('ovSessions').textContent = sessions.length;
+    if (!sessions.length) { c.innerHTML = '<div class="empty"><i class="fa-solid fa-calendar"></i><p>No sessions scheduled yet.</p></div>'; return; }
+    c.innerHTML = `<div class="sessions-list">${sessions.map(s=>{
+      const d = new Date(s.date);
+      return `<div class="session-card">
+        <div class="session-date-box">
+          <div class="day">${d.toLocaleDateString([],{weekday:'short'})}</div>
+          <div class="num">${d.getDate()}</div>
+        </div>
+        <div class="session-info">
+          <h4>${esc(s.title)}</h4>
+          <p>${esc(s.group_name||'')} · ${esc(s.subject||'')}</p>
+          <div class="session-tags">
+            <span class="s-tag time"><i class="fa-regular fa-clock"></i> ${s.time} · ${s.duration}min</span>
+            <span class="s-tag ${s.mode}">${s.mode==='online'?'🌐 Online':'📍 Offline'}</span>
+          </div>
+        </div>
+        <button class="btn-del-s" onclick="delSession('${s.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div>`;
+    }).join('')}</div>`;
+  } catch(e) { c.innerHTML = `<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i><p>${e.message}</p></div>`; }
+}
+
+async function loadProgressTracker() {
+  try {
+    const groups = await api('/groups/mine');
+    const results = await Promise.all(groups.map(async g => ({
+      group:g,
+      milestones: await api(`/groups/${g.id}/milestones`)
+    })));
+    const total = results.reduce((sum, item) => sum + item.milestones.length, 0);
+    const done = results.reduce((sum, item) => sum + item.milestones.filter(m => m.completed).length, 0);
+    const pct = total ? Math.round(done / total * 100) : 0;
+    document.getElementById('ovProgress').textContent = total ? `${pct}%` : 'No goals';
+    document.getElementById('ovProgressLabel').textContent = total ? `${done} of ${total} completed` : 'No milestones yet';
+    document.getElementById('scheduleProgressPct').textContent = total ? `${pct}%` : '0%';
+    document.getElementById('scheduleProgressFill').style.width = total ? `${pct}%` : '0%';
+    document.getElementById('scheduleProgressMeta').textContent = total ? `${done} of ${total} goals complete` : 'Join a group and add milestones to track progress.';
+  } catch(e) {
+    document.getElementById('ovProgress').textContent = '—';
+    document.getElementById('ovProgressLabel').textContent = 'Progress unavailable';
+    document.getElementById('scheduleProgressPct').textContent = '—';
+    document.getElementById('scheduleProgressFill').style.width = '0%';
+    document.getElementById('scheduleProgressMeta').textContent = 'Unable to load progress.';
+  }
+}
+
+async function addSession() {
+  const title = document.getElementById('schTitle').value.trim();
+  const groupId = document.getElementById('schGroup').value;
+  const date = document.getElementById('schDate').value;
+  const time = document.getElementById('schTime').value;
+  const duration = document.getElementById('schDur').value;
+  const mode = document.getElementById('schMode').value;
+  if (!title||!groupId||!date||!time) { toast('All fields except duration are required','error'); return; }
+  try {
+    await api(`/groups/${groupId}/schedules`,{ method:'POST', body:JSON.stringify({ title, date, time, duration, mode }) });
+    toast('Session scheduled!','success');
+    document.getElementById('schTitle').value='';
+    document.getElementById('schDate').value='';
+    document.getElementById('schTime').value='';
+    loadSessions();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function delSession(id) {
+  try { await api(`/profile/schedules/${id}`,{ method:'DELETE' }); loadSessions(); toast('Session removed','success'); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+async function loadProfile() {
+  try {
+    const { skills, ...p } = await api('/profile');
+    document.getElementById('pfNameInput').value = p.name||'';
+    document.getElementById('pfRoll').value = p.roll_number||'';
+    document.getElementById('pfBio').value = p.bio||'';
+    document.getElementById('pfDeptSel').value = p.department||'';
+    document.getElementById('pfYear').value = p.year||'';
+    document.getElementById('pfName').textContent = p.name||'';
+    document.getElementById('pfDept').textContent = (p.department||'') + (p.year?' · Year '+p.year:'');
+    const ini = initials(p.name); const col = p.avatar_color||avatarColor((p.name||'?')[0]);
+    document.getElementById('pfAv').textContent=ini; document.getElementById('pfAv').style.background=col;
+    profileMode = p.mode||'online';
+    document.getElementById('modeOnline').classList.toggle('selected', profileMode==='online');
+    document.getElementById('modeOffline').classList.toggle('selected', profileMode==='offline');
+    mySkills = skills||[];
+    renderSkills();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function saveProfile() {
+  try {
+    const updated = await api('/profile',{ method:'PUT', body:JSON.stringify({
+      name:document.getElementById('pfNameInput').value.trim(),
+      roll_number:document.getElementById('pfRoll').value.trim(),
+      bio:document.getElementById('pfBio').value.trim(),
+      department:document.getElementById('pfDeptSel').value,
+      year:document.getElementById('pfYear').value||null,
+      mode:profileMode,
+    })});
+    document.getElementById('pfName').textContent=updated.name;
+    document.getElementById('pfDept').textContent=(updated.department||'')+(updated.year?' · Year '+updated.year:'');
+    const ini=initials(updated.name); const col=updated.avatar_color||avatarColor((updated.name||'?')[0]);
+    document.getElementById('pfAv').textContent=ini; document.getElementById('pfAv').style.background=col;
+    document.getElementById('sbName').textContent=updated.name;
+    localStorage.setItem('user',JSON.stringify({ ...user, name:updated.name }));
+    await saveSkills();
+    toast('Profile saved!','success');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function saveSkills() {
+  try { await api('/profile/skills',{ method:'PUT', body:JSON.stringify({ skills:mySkills }) }); }
+  catch(e) {}
+}
+
+function setMode(m) {
+  profileMode=m;
+  document.getElementById('modeOnline').classList.toggle('selected',m==='online');
+  document.getElementById('modeOffline').classList.toggle('selected',m==='offline');
+}
+
+function renderSkills() {
+  const c = document.getElementById('skillsList');
+  c.innerHTML = mySkills.length ? mySkills.map((s,i)=>`
+    <div class="skill-row">
+      <span class="sk-name">${esc(s.subject)}</span>
+      <span class="sk-lvl ${s.level}">${s.level==='strong'?'✓ Strong':'✗ Weak'}</span>
+      <button class="btn-del-sk" onclick="removeSkill(${i})"><i class="fa-solid fa-xmark"></i></button>
+    </div>`).join('') : '<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px">No skills added yet.</div>';
+  // preview pills
+  document.getElementById('skillPreview').innerHTML = mySkills.map(s=>
+    `<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:50px;background:${s.level==='strong'?'#d1fae5':'#fee2e2'};color:${s.level==='strong'?'#065f46':'#991b1b'}">${esc(s.subject)}</span>`).join('');
+}
+
+function addSkill() {
+  const subject = document.getElementById('newSkillInput').value.trim();
+  const level = document.getElementById('newSkillLevel').value;
+  if (!subject) { toast('Enter a subject name','error'); return; }
+  if (mySkills.find(s=>s.subject.toLowerCase()===subject.toLowerCase())) { toast('Already added','error'); return; }
+  mySkills.push({ subject, level });
+  document.getElementById('newSkillInput').value='';
+  renderSkills();
+}
+
+function removeSkill(i) { mySkills.splice(i,1); renderSkills(); }
+
+async function loadSubjects() {
+  try {
+    const subs = await api('/profile/subjects');
+    const dl1 = document.getElementById('subjList');
+    const dl2 = document.getElementById('subjList2');
+    const opts = subs.map(s=>`<option value="${esc(s)}">`).join('');
+    if(dl1) dl1.innerHTML=opts;
+    if(dl2) dl2.innerHTML=opts;
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+let toastTimer;
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.className = `toast ${type} show`;
+  t.innerHTML = `<i class="fa-solid fa-${type==='success'?'circle-check':'circle-exclamation'}"></i> ${msg}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+function logout() {
+  if (socket) socket.disconnect();
+  localStorage.removeItem('token'); localStorage.removeItem('user');
+  window.location.href = 'login.html';
+}
+</script>
+</body>
+</html>

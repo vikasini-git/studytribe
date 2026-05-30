@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign In — StudyTribe</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#2563eb;--blue-dark:#1d4ed8;--blue-deeper:#1e3a8a;--slate-50:#f8fafc;--slate-200:#e2e8f0;--slate-400:#94a3b8;--slate-700:#334155;--slate-900:#0f172a}
+body{min-height:100vh;font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,var(--blue-deeper) 0%,#1a56db 50%,var(--blue) 100%);display:flex;align-items:center;justify-content:center;padding:20px}
+.card{width:100%;max-width:420px;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.25)}
+.card-top{background:linear-gradient(135deg,var(--blue-deeper),var(--blue));padding:28px 32px 20px;text-align:center;position:relative}
+.card-top::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:20px;background:#fff;border-radius:20px 20px 0 0}
+.logo{display:inline-flex;align-items:center;gap:9px;font-size:20px;font-weight:700;color:#fff;margin-bottom:8px}
+.logo i{color:#fbbf24}
+.card-top h2{font-size:24px;font-weight:700;color:#fff;margin-bottom:4px}
+.card-top p{font-size:14px;color:rgba(255,255,255,0.75)}
+.card-body{padding:28px 32px 32px}
+.alert{display:none;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:18px;align-items:center;gap:8px}
+.alert.show{display:flex}
+.alert-error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.alert-success{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:12.5px;font-weight:600;color:var(--slate-700);margin-bottom:6px}
+.iw{position:relative}
+.iw .fi{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--slate-400);font-size:13px;pointer-events:none}
+.iw input{width:100%;padding:11px 42px 11px 38px;border:1.5px solid var(--slate-200);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--slate-50);outline:none;transition:border-color .18s,box-shadow .18s}
+.iw input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,0.12)}
+.eye{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--slate-400);font-size:13px;padding:2px}
+.eye:hover{color:var(--blue)}
+.btn{width:100%;margin-top:8px;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s,transform .1s;box-shadow:0 4px 14px rgba(37,99,235,0.35)}
+.btn:hover:not(:disabled){opacity:.92;transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.foot{text-align:center;margin-top:20px;font-size:13.5px;color:var(--slate-400)}
+.foot a{color:var(--blue);font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-top">
+    <div class="logo"><i class="fa-solid fa-graduation-cap"></i> StudyTribe</div>
+    <h2>Welcome Back</h2>
+    <p>Learn together. Grow together.</p>
+  </div>
+  <div class="card-body">
+    <div class="alert" id="alert"></div>
+    <form id="form" action="/api/auth/login" method="post">
+      <div class="fg"><label>Institutional Email</label>
+        <div class="iw"><i class="fa-solid fa-envelope fi"></i><input type="email" id="email" name="email" placeholder="Enter your email" required/></div></div>
+      <div class="fg"><label>Password</label>
+        <div class="iw"><i class="fa-solid fa-lock fi"></i><input type="password" id="pwd" name="password" placeholder="Enter your password" required/>
+          <button type="button" class="eye" onclick="toggle()"><i class="fa-solid fa-eye" id="eyeI"></i></button></div></div>
+      <button class="btn" id="btn" type="submit"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In</button>
+    </form>
+    <div class="foot">Don't have an account? <a href="signup.html">Get Started</a></div>
+  </div>
+</div>
+<script>
+if(localStorage.getItem('token')) window.location.href='dashboard.html';
+function toggle(){const i=document.getElementById('pwd'),e=document.getElementById('eyeI');i.type=i.type==='password'?'text':'password';e.className='fa-solid fa-eye'+(i.type==='text'?'-slash':'');}
+function showAlert(m,t){const e=document.getElementById('alert');e.className='alert alert-'+t+' show';e.innerHTML='<i class="fa-solid fa-'+(t==='error'?'circle-exclamation':'circle-check')+'"></i> '+m;}
+async function parseJSON(response){const text=await response.text();try{return text?JSON.parse(text):{};}catch{return{};}}
+document.getElementById('form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const btn=document.getElementById('btn');
+  btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Signing in...';
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('email').value.trim(),password:document.getElementById('pwd').value})});
+    const d=await parseJSON(r);if(!r.ok)throw new Error(d.error||r.statusText||'Login failed.');
+    localStorage.setItem('token',d.token);localStorage.setItem('user',JSON.stringify(d.user));
+    showAlert('Login successful!','success');
+    setTimeout(()=>window.location.href='dashboard.html',1000);
+  }catch(err){showAlert(err.message,'error');btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In';}
+});
+</script>
+</body>
+</html>

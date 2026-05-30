@@ -1,0 +1,4 @@
+node_modules/
+studygroup.db
+.env
+*.log
