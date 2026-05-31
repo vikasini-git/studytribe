@@ -3,7 +3,9 @@ const initSqlJs = require('sql.js');
 const fs   = require('fs');
 const path = require('path');
 
-const DB_FILE = path.join(__dirname, 'studygroup.db');
+const DB_FILE = process.env.NODE_ENV === 'production'
+  ? '/tmp/studygroup.db'
+  : path.join(__dirname, 'studygroup.db');
 let _db = null;
 
 function persist() {
