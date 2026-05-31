@@ -95,3 +95,12 @@ db.init().then(() => {
     console.log(`\n🎓  StudyTribe  →  http://localhost:${PORT}\n`);
   });
 }).catch(e => { console.error('[FATAL]', e); process.exit(1); });
+
+app.get('/api/admin/users', (req, res) => {
+  try {
+    const users = db.getAllStudents();
+    res.json(users);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});

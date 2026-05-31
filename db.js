@@ -287,6 +287,11 @@ function deleteMilestone(id) {
   run(`DELETE FROM Milestones WHERE id=?`,[id]);
 }
 
+function getAllStudents() {
+  return query(`SELECT id, name, email, department, year, created_at FROM Students ORDER BY created_at DESC`);
+}
+module.exports.getAllStudents = getAllStudents;
+
 module.exports = {
   init,
   createStudent, getStudentByEmail, getStudentById, updateStudent,
@@ -299,3 +304,5 @@ module.exports = {
   saveSchedule, getSchedules, getGroupSchedules, deleteSchedule,
   saveMilestone, getMilestones, toggleMilestone, deleteMilestone,
 };
+
+
