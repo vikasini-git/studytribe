@@ -25,7 +25,7 @@ app.use('/api/profile', require('./routes/profile'));
 
 app.get('/api/health', (_,res) => res.json({ status:'ok', uptime:Math.floor(process.uptime()) }));
 
-app.get('*', (req, res) => {
+app.use('*', (req, res) => {
   if (req.path.startsWith('/api')) return res.status(404).json({ error:'Not found.' });
   const map = { '/':'index.html', '/login':'login.html', '/signup':'signup.html', '/dashboard':'dashboard.html' };
   res.sendFile(path.join(__dirname,'public', map[req.path]||'index.html'));
